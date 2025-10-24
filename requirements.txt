@@ -1,2 +1,2 @@
 # Adding streamlit folium package for community support
-streamlit-folium==0.10.1
+streamlit-folium==0.25.3
