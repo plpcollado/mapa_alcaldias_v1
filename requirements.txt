@@ -1,2 +1,6 @@
 # Adding streamlit folium package for community support
 streamlit-folium==0.25.3
+geopandas==1.1.1
+pandas
+folium
+requests
