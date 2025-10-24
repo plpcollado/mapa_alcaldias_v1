@@ -1,0 +1,23 @@
+# Ignoring macos system files
+.DS_Store
+
+# Ignoring stramlit conflit python and unnecesary files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+.env
+.venv
+streamlit/
+.ipynb_checkpoints
+*.log
+*.sqlite3
+*.db
+*.sqlite
+# Ignoring IDE specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
