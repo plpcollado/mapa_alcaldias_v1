@@ -4,7 +4,7 @@ from data_loader import load_data
 from map_utils import load_geojson, render_folium_map
 
 st.set_page_config(page_title="Dashboard CDMX", layout="wide")
-st.title("🚨 Dashboard de Incidentes Delictivos – CDMX")
+st.title("🚨 Dashboard de Incidentes  – CDMX")
 
 # === 1. Carga de datos y GeoJSON ===
 url_geojson = "https://datos.cdmx.gob.mx/dataset/alcaldias/resource/8648431b-4f34-4f1a-a4b1-19142f944300/download/limite-de-las-alcaldias.json"
