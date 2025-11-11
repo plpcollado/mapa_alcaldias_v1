@@ -3,7 +3,7 @@ from streamlit_folium import st_folium
 from data_loader import load_data
 from map_utils import load_geojson, render_folium_map
 
-st.set_page_config(page_title="Dashboard CDMX", layout="wide")
+st.set_page_config(page_title="Dashboard CDMX - UP", layout="wide")
 st.title("🚨 Dashboard de Incidentes  – CDMX")
 
 # === 1. Carga de datos y GeoJSON ===
