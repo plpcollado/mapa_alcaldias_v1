@@ -69,20 +69,37 @@ def plot_proporcion_violencia(data):
     return pie + text
 
 def plot_heatmap_dia_hora(data):
-    """Heatmap: Delitos por día de la semana y hora."""
+    """Heatmap: Porcentaje de delitos violentos por día de la semana y hora."""
     if data.empty:
         return alt.Chart(pd.DataFrame()).mark_text(text="No hay datos").encode()
 
-    data_heatmap = data[data['hora_hecho_h'].between(0, 23)]
+    data_heatmap = data[data['hora_hecho_h'].between(0, 23)].copy()
     
-    dias_ordenados = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"]
-    # Asegurar que 'dia_semana' sea categórica con el orden correcto
+    # Detectar si los días tienen acentos o no
     if 'dia_semana' in data_heatmap.columns:
-        # Usamos 'astype' por si acaso ya era categórica pero con otro orden
-        data_heatmap['dia_semana'] = pd.Categorical(data_heatmap['dia_semana'], categories=dias_ordenados, ordered=True)
+        sample_dias = data_heatmap['dia_semana'].dropna().unique()
+        if any('Á' in str(d) or 'É' in str(d) for d in sample_dias):
+            # Con acentos (hour_crimes_cleaned.csv)
+            dias_ordenados = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO", "DOMINGO"]
+        else:
+            # Sin acentos (df_streamlit.csv)
+            dias_ordenados = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"]
+    else:
+        dias_ordenados = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO", "DOMINGO"]
     
-    # Agrupar en lugar de crosstab para manejar NaNs en el categórico
-    df_plot = data_heatmap.groupby(['dia_semana', 'hora_hecho_h']).size().reset_index(name='Total')
+    # AGREGACIÓN: Calcular total y violentos por día y hora
+    if 'dia_semana' not in data_heatmap.columns or 'CATEGORIA' not in data_heatmap.columns:
+        return alt.Chart(pd.DataFrame()).mark_text(text="Faltan columnas necesarias").encode()
+    
+    # Total de delitos por día y hora
+    total_delitos = data_heatmap.groupby(['dia_semana', 'hora_hecho_h']).size().reset_index(name='Total')
+    
+    # Delitos violentos por día y hora
+    violentos = data_heatmap[data_heatmap['CATEGORIA'] != 'No violentos'].groupby(['dia_semana', 'hora_hecho_h']).size().reset_index(name='Violentos')
+    
+    # Merge y calcular porcentaje
+    df_plot = total_delitos.merge(violentos, on=['dia_semana', 'hora_hecho_h'], how='left').fillna(0)
+    df_plot['Porcentaje_Violentos'] = (df_plot['Violentos'] / df_plot['Total']).fillna(0)
     
     # Crear un grid completo para que Altair muestre 0s
     all_hours = pd.DataFrame({'hora_hecho_h': range(24)})
@@ -91,20 +108,21 @@ def plot_heatmap_dia_hora(data):
     
     df_plot = grid.merge(df_plot, on=['dia_semana', 'hora_hecho_h'], how='left').fillna(0)
 
-
     heatmap = alt.Chart(df_plot).mark_rect().encode(
         x=alt.X('hora_hecho_h:O', title='Hora del Día', axis=alt.Axis(labels=True, ticks=True)),
         y=alt.Y('dia_semana:O', title='Día de la Semana', sort=dias_ordenados),
-        color=alt.Color('Total:Q', 
-                        title='Total Delitos',
-                        scale=alt.Scale(range=ESCALA_ROJOS)), # Usar escala de rojos
+        color=alt.Color('Porcentaje_Violentos:Q', 
+                        title='% Violentos',
+                        scale=alt.Scale(range=ESCALA_ROJOS, domain=[0, 1])), 
         tooltip=[
             alt.Tooltip('dia_semana', title='Día'),
             alt.Tooltip('hora_hecho_h', title='Hora'),
-            alt.Tooltip('Total', title='Total Delitos', format=',')
+            alt.Tooltip('Total', title='Total Delitos', format=','),
+            alt.Tooltip('Violentos', title='Delitos Violentos', format=','),
+            alt.Tooltip('Porcentaje_Violentos', title='% Violentos', format='.1%')
         ]
     ).properties(
-        title='Heatmap de Incidencia (Día vs. Hora)'
+        title='Heatmap: Porcentaje de Delitos Violentos (Día vs. Hora)'
     ).interactive()
 
     return heatmap
@@ -122,25 +140,28 @@ def plot_crimenes_violentos_por_hora(data):
         (data['CATEGORIA'] != 'No violentos')
     ].copy()
 
+    # AGREGACIÓN: Agrupar los datos antes de enviar a Altair
+    df_aggregated = df_plot.groupby(['hora_hecho_h', 'CATEGORIA']).size().reset_index(name='Total')
+    
     # Definir orden de categorías para apilar
-    category_order = df_plot['CATEGORIA'].value_counts().index.tolist()
+    category_order = df_aggregated.groupby('CATEGORIA')['Total'].sum().sort_values(ascending=False).index.tolist()
     
     # Colores: Asignar colores de PALETA_PRINCIPAL a las categorías
     color_scale = alt.Scale(domain=category_order, range=PALETA_PRINCIPAL)
     
     # Gráfico base
-    base = alt.Chart(df_plot).encode(
+    base = alt.Chart(df_aggregated).encode(
         x=alt.X('hora_hecho_h:O', title='Hora del Día', axis=alt.Axis(values=list(range(0, 24, 2)))),
         tooltip=[
             alt.Tooltip('hora_hecho_h', title='Hora'),
             alt.Tooltip('CATEGORIA', title='Categoría'),
-            alt.Tooltip('count()', title='Total')
+            alt.Tooltip('Total:Q', title='Total', format=',')
         ]
     )
     
     # Barras apiladas
     bars = base.mark_bar().encode(
-        y=alt.Y('count()', title='Número de Crímenes', stack='zero'),
+        y=alt.Y('Total:Q', title='Número de Crímenes', stack='zero'),
         color=alt.Color('CATEGORIA', scale=color_scale),
         order=alt.Order('CATEGORIA', sort='descending')
     )
@@ -151,7 +172,7 @@ def plot_crimenes_violentos_por_hora(data):
     ).encode(x='start:Q', x2='stop:Q')
     
     # Etiqueta de la hora máxima
-    totales = df_plot.groupby('hora_hecho_h').size().reset_index(name='Total')
+    totales = df_aggregated.groupby('hora_hecho_h')['Total'].sum().reset_index()
     if not totales.empty:
         max_data = totales.loc[totales['Total'].idxmax()]
         
@@ -306,49 +327,48 @@ def plot_polar_violencia_hora(data):
     ratio_df = ratio.reset_index()
     ratio_df.columns = ['hora', 'ratio']
     ratio_df['hora_label'] = ratio_df['hora'].astype(str).str.zfill(2) + ":00"
-
-    # --- Base circular ---
-    base = alt.Chart(ratio_df).encode(
+    
+    # Escalar ratio: las barras deben llegar cerca del círculo de etiquetas (230)
+    # Máximo: 200 para dejar espacio entre barras y etiquetas
+    ratio_df['ratio_scaled'] = 30 + (ratio_df['ratio'] * 170)  # 30 a 200
+    
+    # --- Barras polares (siguiendo el patrón de la documentación) ---
+    polar_bars = alt.Chart(ratio_df).mark_arc(stroke='white', tooltip=True).encode(
         theta=alt.Theta("hora:O", title=None, sort=None),
-        radius=alt.Radius("ratio:Q", scale=alt.Scale(domain=[0, 1]), title=None),
-        color=alt.Color("ratio:Q", scale=alt.Scale(range=ESCALA_ROJOS), legend=None)
-    )
-
-    # --- Barras polares ---
-    arcs = base.mark_arc(innerRadius=40, outerRadius=220, opacity=0.9).encode(
+        radius=alt.Radius('ratio_scaled:Q', scale=alt.Scale(type='linear', domain=[0, 230])),
+        radius2=alt.datum(30),  # Radio interior fijo pequeño
+        color=alt.Color("ratio:Q", scale=alt.Scale(range=ESCALA_ROJOS, domain=[0, 1]), legend=None),
         tooltip=[
             alt.Tooltip("hora_label", title="Hora"),
             alt.Tooltip("ratio", title="Proporción Violenta", format=".1%")
         ]
     )
 
-    # --- Etiquetas radiales (horas) ---
+    # --- Etiquetas radiales (horas) en círculo exterior fijo ---
     text_horas = alt.Chart(ratio_df).mark_text(
-        radius=250,  # Más grande para que no se corten
-        fontSize=10,
+        fontSize=12,
         fontWeight="bold",
-        color="gray"
+        color="#2c3e50"  # Color oscuro con buen contraste
     ).encode(
         theta=alt.Theta("hora:O"),
+        radius=alt.value(230),  # Radio fijo más grande, independiente de las barras
         text=alt.Text("hora_label:N")
     )
 
     # --- Etiquetas interiores (porcentajes) ---
-    text_ratio = alt.Chart(ratio_df).mark_text(
-        fontSize=9,
+    text_ratio = alt.Chart(ratio_df[ratio_df['ratio'] > 0.15]).mark_text(
+        fontSize=8,
         fontWeight='bold',
-        color='black',
-        radiusOffset=10  # ✅ desplazamiento correcto (parámetro válido)
+        color='white',
+        radiusOffset=-10
     ).encode(
         theta=alt.Theta("hora:O"),
-        radius=alt.Radius("ratio:Q", scale=alt.Scale(domain=[0, 1]), title=None),
+        radius=alt.Radius('ratio_scaled:Q', scale=alt.Scale(type='linear')),
         text=alt.Text("ratio:Q", format=".0%")
-    ).transform_filter(
-        alt.datum.ratio > 0
     )
 
     # --- Unión y configuración ---
-    chart = (arcs + text_horas + text_ratio).properties(
+    chart = (polar_bars + text_horas + text_ratio).properties(
         title="Proporción de delitos violentos por hora",
         width=500,   # más grande para mejor visibilidad
         height=500

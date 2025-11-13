@@ -36,6 +36,9 @@ delegaciones = map_utils.load_geojson(URL_GEOJSON_ALCALDIAS, local_backup="limit
 
 data = data_loader.load_data("df_streamlit.csv") 
 
+# Cargar datos completos para gráficos 2 y 3
+data_completo = data_loader.load_data("hour_crimes_cleaned.csv")
+
 if data.empty:
     st.error("No se pudieron cargar los datos dummy. El dashboard no puede continuar.")
     st.stop()
@@ -145,7 +148,7 @@ col3, col4 = st.columns(2)
 
 with col3:
     st.markdown("##### Gráfico 2: Volumen Total y Fracción Violenta")
-    chart2 = plot_utils.plot_volumen_total_violencia_hora(df_filtrado)
+    chart2 = plot_utils.plot_volumen_total_violencia_hora(data_completo)
     st.altair_chart(chart2, use_container_width=True)
     
 with col4:
@@ -160,12 +163,12 @@ col5, col6 = st.columns(2)
 
 with col5:
     st.markdown("##### Gráfico 1: Frecuencia de Crímenes Violentos")
-    chart1 = plot_utils.plot_crimenes_violentos_por_hora(df_filtrado)
+    chart1 = plot_utils.plot_crimenes_violentos_por_hora(data_completo)
     st.altair_chart(chart1, use_container_width=True)
     
 with col6:
     st.markdown("##### Gráfico 3: Porcentaje de Crímenes Violentos")
-    chart3 = plot_utils.plot_ratio_violencia_hora(df_filtrado)
+    chart3 = plot_utils.plot_ratio_violencia_hora(data_completo)
     st.altair_chart(chart3, use_container_width=True)
     
 st.markdown("---")
@@ -175,12 +178,12 @@ col7, col8 = st.columns(2)
 
 with col7:
     st.markdown("##### Heatmap de Incidencia (Día vs. Hora)")
-    chart_heatmap = plot_utils.plot_heatmap_dia_hora(df_filtrado)
+    chart_heatmap = plot_utils.plot_heatmap_dia_hora(data_completo)
     st.altair_chart(chart_heatmap, use_container_width=True)
 
 with col8:
     st.markdown("##### Gráfico 4/5: Proporción Violenta (Polar)")
-    chart_polar = plot_utils.plot_polar_violencia_hora(df_filtrado)
+    chart_polar = plot_utils.plot_polar_violencia_hora(data_completo)
     st.altair_chart(chart_polar, use_container_width=True)
     
 # --- Fila 6: Dataframe (Opcional) ---

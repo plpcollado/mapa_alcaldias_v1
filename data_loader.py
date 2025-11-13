@@ -289,13 +289,51 @@ def process_dummy_data(df):
     return df
 
 # --- Función principal de carga (Activa) ---
+def process_hour_crimes_data(df):
+    """Procesa el archivo hour_crimes_cleaned.csv que ya tiene CATEGORIA"""
+    df = df.copy()
+    
+    # Renombrar columnas con sufijo _N a nombres sin sufijo
+    rename_map = {
+        'latitud_N': 'latitud',
+        'longitud_N': 'longitud',
+        'alcaldia_hecho_N': 'alcaldia_hecho',
+        'delito_N': 'delito',
+        'hora_num': 'hora_hecho_h',
+        'anio_hecho_N': 'anio_hecho',
+        'mes_hecho_N': 'mes_hecho_num'
+    }
+    
+    for old_col, new_col in rename_map.items():
+        if old_col in df.columns:
+            df = df.rename(columns={old_col: new_col})
+    
+    # Asegurar tipos de dato
+    if 'hora_hecho_h' in df.columns:
+        df['hora_hecho_h'] = pd.to_numeric(df['hora_hecho_h'], errors='coerce').fillna(-1).astype(int)
+    
+    # Asegurar que dia_semana esté en el formato correcto (con acentos)
+    if 'dia_semana' in df.columns:
+        dias_ordenados = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO", "DOMINGO"]
+        df['dia_semana'] = pd.Categorical(df['dia_semana'], categories=dias_ordenados, ordered=True)
+    
+    # Crear columna 'Violento' si no existe
+    if 'CATEGORIA' in df.columns and 'Violento' not in df.columns:
+        df['Violento'] = np.where(
+            df['CATEGORIA'] == 'No violentos',
+            'No Violento',
+            'Violento'
+        )
+    
+    return df
+
 @st.cache_data
 def load_data(path="df_streamlit.csv"):
     """
-    Carga y procesa el dataset DUMMY 'df_streamlit.csv'.
+    Carga y procesa el dataset DUMMY 'df_streamlit.csv' o 'hour_crimes_cleaned.csv'.
     """
     try:
-        st.info("Cargando dataset local (df_streamlit.csv)...")
+        st.info(f"Cargando dataset local ({path})...")
         data = pd.read_csv(path)
         st.success(f"Datos locales cargados: {len(data)} registros.")
     except Exception as e:
@@ -303,15 +341,18 @@ def load_data(path="df_streamlit.csv"):
         return pd.DataFrame()
 
     if not data.empty:
-        st.info("Aplicando procesamiento DUMMY...")
-        
-        # --- CAMBIO SOLICITADO ---
-        # Aplicamos la función completa y guardamos como 'data_limpio'
-        data_limpio = process_dummy_data(data)
-        # --- FIN CAMBIO ---
+        # Detectar qué archivo es por las columnas
+        if 'latitud_N' in data.columns:
+            # Es hour_crimes_cleaned.csv
+            st.info("Procesando hour_crimes_cleaned.csv...")
+            data_limpio = process_hour_crimes_data(data)
+        else:
+            # Es df_streamlit.csv
+            st.info("Aplicando procesamiento DUMMY...")
+            data_limpio = process_dummy_data(data)
         
         data_limpio = data_limpio.dropna(subset=["latitud", "longitud"])
-        st.success(f"Procesamiento dummy finalizado. {len(data_limpio)} registros válidos.")
+        st.success(f"Procesamiento finalizado. {len(data_limpio)} registros válidos.")
     else:
         data_limpio = pd.DataFrame()
     
