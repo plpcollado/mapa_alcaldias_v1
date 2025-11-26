@@ -1,8 +1,8 @@
-# Librería necesaria para el funcionamiento de esta página
+# Librerías necesarias para el funcionamiento de esta página
 import streamlit as st
-import data_loader
-import plot_utils
-import auth_utils
+import data_loader  # Módulo local de carga de datos
+import plot_utils   # Módulo local de visualizaciones
+import auth_utils   # Módulo local de autenticación
 
 # 1. CONFIGURACIÓN DE LA PÁGINA
 st.set_page_config(

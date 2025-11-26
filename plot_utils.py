@@ -1,4 +1,4 @@
-# Librería necesaria para el funcionamiento de este archivo
+# Librerías necesarias para el funcionamiento de este archivo
 import altair as alt
 import pandas as pd
 import numpy as np
