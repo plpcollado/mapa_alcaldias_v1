@@ -28,8 +28,8 @@ if data.empty:
     st.stop()
 
 # === Títulos ===
-st.title("🚨 Dashboard de Incidentes Delictivos – CDMX")
-st.subheader("🗺️ Mapa Interactivo de Incidencias")
+st.title("Dashboard de Incidentes Delictivos – CDMX")
+st.subheader("Mapa Interactivo de Incidencias")
 
 # === 3. Sidebar: Filtros y Configuración ===
 st.sidebar.header("⚙️ Filtros Principales")
@@ -93,7 +93,7 @@ if categoria != "TODAS":
     df_filtrado = df_filtrado[df_filtrado[columna_filtro] == categoria]
 
 # === 5. KPIs (Indicadores Clave) - Recuperados de tu archivo ===
-st.markdown("### 📊 Indicadores Clave")
+st.markdown("### Indicadores Clave")
 col_kpi1, col_kpi2, col_kpi3, col_kpi4 = st.columns(4)
 
 with col_kpi1:
@@ -130,7 +130,7 @@ col_map, col_charts = st.columns((6, 4))
 
 # --- Columna Izquierda: MAPA ---
 with col_map:
-    st.subheader(f"📍 Mapa de Incidencias ({alcaldia})")
+    st.subheader(f"Mapa de Incidencias ({alcaldia})")
     
     if df_filtrado.empty:
         st.warning("⚠️ No hay datos para mostrar con los filtros seleccionados.")
@@ -164,7 +164,7 @@ with col_map:
 
 # --- Columna Derecha: GRÁFICAS ADICIONALES ---
 with col_charts:
-    st.subheader("📈 Estadísticas Detalladas")
+    st.subheader("Estadísticas Detalladas")
     
     tab1, tab2 = st.tabs(["Por Alcaldía", "Top Delitos"])
     
