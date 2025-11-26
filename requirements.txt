@@ -7,3 +7,4 @@ numpy
 altair
 folium
 requests
+joblib
