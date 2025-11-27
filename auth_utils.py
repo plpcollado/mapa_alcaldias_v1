@@ -207,5 +207,5 @@ def pagina_login(usuarios: dict):
             st.markdown("""
             **Usuario Privilegiado:**
             - Usuario: `admin`
-            - Contraseña: `admin123`
+            - Contraseña: `thales123`
             """)

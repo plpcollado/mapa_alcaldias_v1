@@ -34,7 +34,7 @@ COLORES_STACK = [
 
 USUARIOS = {
     "admin": {
-        "password_hash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",  # admin123
+        "password_hash": "6485474111f822e15f023379bcdde7a4a483eb661b270ec11216b3934625af01",  # admin123
         "tipo": "privilegiado",
         "nombre_completo": "Administrador"
     }
