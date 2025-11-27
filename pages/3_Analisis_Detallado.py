@@ -170,16 +170,12 @@ def load_cuadrante_centroids(features_csv: str = None, joblib_path: str = None, 
 
 # Carga de datos (prioridad: parquet local > csv absoluto)
 local_parquet = "data/predicciones_lite.parquet"
+
 absolute_csv_fallback = "/Users/pedropc/Downloads/full-pipeline-clasificacion/Team5/results/prediccion_violencia/pred_prophet_cuadrantes_N7.csv"
 
 if os.path.exists(local_parquet):
     pred_path = local_parquet
-elif os.path.exists(absolute_csv_fallback):
-    pred_path = absolute_csv_fallback
-else:
-    st.error(f"No se encontró archivo de predicciones en '{local_parquet}' ni en la ruta original.")
-    st.stop()
-
+      
 preds = load_predictions(pred_path)
 
 # Selector de fecha en Sidebar
