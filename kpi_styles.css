@@ -1,0 +1,87 @@
+/* ============================================================
+   ESTILOS PARA TARJETAS KPI (kpi_styles.css) - ALINEACIÓN EXTREMOS Y COMPACTOS
+   ============================================================ */
+
+/* --- TARJETA BASE --- */
+.kpi-card {
+    background-color: #9F2241; /* Rojo Institucional */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 12px 18px; /* Padding ligeramente reducido */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+    color: white;
+    
+    /* --- FLEXBOX PARA ALINEACIÓN EXTREMOS --- */
+    height: 100%;           
+    min-height: 110px;      /* <--- CAMBIO AQUÍ: Altura reducida */
+    display: flex;          
+    flex-direction: column; 
+    
+    /* Separa el contenido a los extremos (Título arriba, Valor abajo) */
+    justify-content: space-between; 
+    
+    box-sizing: border-box;
+}
+
+/* Efecto Hover */
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease;
+}
+
+/* --- TÍTULOS (LABEL) --- */
+.kpi-label {
+    color: #f0f0f0;
+    font-size: 0.8rem; /* Ligeramente más pequeño */
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left;
+    margin: 0; 
+}
+
+/* --- VALORES (NÚMEROS) --- */
+.kpi-value {
+    color: #ffffff;
+    font-weight: 700;
+    margin: 0;
+    text-align: left; 
+}
+
+/* --- CLASES DE TAMAÑO DE TEXTO --- */
+
+/* .text-lg: Datos cortos */
+.text-lg {
+    font-size: 1.8rem;
+}
+
+/* .text-md: Datos medianos */
+.text-md {
+    font-size: 1.3rem;
+}
+
+/* .text-sm: Datos largos */
+.text-sm {
+    font-size: 0.95rem;      
+    line-height: 1.1;       
+    word-wrap: break-word;  
+}
+
+/* --- ESTILO ADVERTENCIA (Gris) --- */
+.warning-box {
+    background-color: #f1f5f9;
+    border-left: 5px solid #94a3b8;
+    padding: 15px;
+    border-radius: 8px;
+    color: #334155;
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.warning-icon {
+    font-size: 1.4rem;
+    margin-right: 12px;
+}
