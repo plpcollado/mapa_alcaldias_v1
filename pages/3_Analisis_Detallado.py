@@ -8,7 +8,7 @@ import os
 from datetime import date
 import streamlit.components.v1 as components
 
-# === 1. Configuración de la Página ===
+# Configuración de la página
 st.set_page_config(
     page_title="Análisis Detallado - Dashboard Delitos CDMX",
     page_icon="🔍",
@@ -27,24 +27,31 @@ st.markdown("---")
 
 @st.cache_data
 def load_predictions(path: str) -> pd.DataFrame:
-    """Carga las predicciones (espera columnas: ds, cuadrante_id, yhat_N_cuadrante o similar)."""
-    df = pd.read_csv(path, parse_dates=["ds"]) 
+    # Carga de las predicciones desde CSV o Parquet y normaliza columnas
+    if path.endswith(".parquet"):
+        df = pd.read_parquet(path)
+    else:
+        df = pd.read_csv(path, parse_dates=["ds"]) 
+        
     df = df.rename(columns={c: c.strip() for c in df.columns})
     # Normalizar nombres comunes
     if "yhat_N_cuadrante" in df.columns:
         df = df.rename(columns={"yhat_N_cuadrante": "yhat"})
+    
+    # Normalizar cuadrante_id (siempre string limpio)
     if "cuadrante_id" in df.columns:
         try:
-            # Normalizar a entero string (ej: "0.0" -> 0 -> "0")
-            df["cuadrante_id"] = df["cuadrante_id"].astype(float).astype(int).astype(str)
+            # Si es float/int, convertir a string sin decimales
+            df["cuadrante_id"] = df["cuadrante_id"].astype(str).str.replace('.0', '', regex=False)
         except Exception:
             df["cuadrante_id"] = df["cuadrante_id"].astype(str)
+            
     return df
 
 
 @st.cache_data
 def load_polygons(url: str) -> gpd.GeoDataFrame:
-    """Carga polígonos de cuadrantes desde URL y normaliza IDs."""
+    # Carga polígnonos de cuadrantes desde GeoJSON URL
     try:
         gdf = gpd.read_file(url)
         # Normalizar nombre de columna
@@ -72,14 +79,8 @@ def load_polygons(url: str) -> gpd.GeoDataFrame:
 
 @st.cache_data
 def load_cuadrante_centroids(features_csv: str = None, joblib_path: str = None, geojson_url: str = None) -> pd.DataFrame:
-    """Intenta obtener centroides/coords por cuadrante.
-
-    - Primero intenta cargar `joblib_path` (mapeo guardado por pipeline).
-    - Si no, intenta leer `features_csv` y extraer columnas de lat/lon.
-    - Si no, intenta cargar GeoJSON desde `geojson_url`.
-    Devuelve DataFrame con columnas: cuadrante_id, lat, lon
-    """
-    # 1) joblib mapping
+    # Cargar el centroide de los cuadrantes desde diversas fuentes
+    # Mapeo de joblib
     if joblib_path and os.path.exists(joblib_path):
         try:
             mapping = joblib.load(joblib_path)
@@ -167,16 +168,19 @@ def load_cuadrante_centroids(features_csv: str = None, joblib_path: str = None, 
 
     return pd.DataFrame(columns=["cuadrante_id", "lat", "lon"]) 
 
+# Carga de datos (prioridad: parquet local > csv absoluto)
+local_parquet = "data/predicciones_lite.parquet"
+absolute_csv_fallback = "/Users/pedropc/Downloads/full-pipeline-clasificacion/Team5/results/prediccion_violencia/pred_prophet_cuadrantes_N7.csv"
 
-# === UI ===
-# Carga de datos (ruta fija)
-default_pred_path = "/Users/pedropc/Downloads/full-pipeline-clasificacion/Team5/results/prediccion_violencia/pred_prophet_cuadrantes_N7.csv"
-
-if not os.path.exists(default_pred_path):
-    st.error(f"Archivo de predicción no encontrado en: {default_pred_path}")
+if os.path.exists(local_parquet):
+    pred_path = local_parquet
+elif os.path.exists(absolute_csv_fallback):
+    pred_path = absolute_csv_fallback
+else:
+    st.error(f"No se encontró archivo de predicciones en '{local_parquet}' ni en la ruta original.")
     st.stop()
 
-preds = load_predictions(default_pred_path)
+preds = load_predictions(pred_path)
 
 # Selector de fecha en Sidebar
 min_date = preds["ds"].min().date() if not preds.empty else date.today()
@@ -232,7 +236,7 @@ else:
             center_lat = merged["lat"].dropna().mean() if merged["lat"].notna().any() else 19.4326
             center_lon = merged["lon"].dropna().mean() if merged["lon"].notna().any() else -99.1332
 
-            m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles="Cartodb positron")
+            m = folium.Map(location=[center_lat, center_lon], zoom_start=11, tiles="Cartodb positron")
 
             # Añadir polígonos de TODOS los cuadrantes (capa base)
             if gdf_polygons is not None:
@@ -240,9 +244,9 @@ else:
                     gdf_polygons,
                     name="Todos los Cuadrantes",
                     style_function=lambda x: {
-                        'fillColor': '#3388ff',
+                        'fillColor': "#9F22413D",
                         'color': '#666666',
-                        'weight': 0.5,
+                        'weight': 1.0,
                         'fillOpacity': 0.05
                     },
                     tooltip=folium.GeoJsonTooltip(
@@ -283,7 +287,7 @@ else:
                 rank = merged["score"].rank(method="first", ascending=False).loc[i]
                 folium.CircleMarker(
                     location=[row["lat"], row["lon"]],
-                    radius=10,
+                    radius=3,
                     color="#990000",
                     fill=True,
                     fill_color="#ff4444",
