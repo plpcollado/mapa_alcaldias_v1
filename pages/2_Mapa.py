@@ -1,3 +1,4 @@
+# pages/2_Mapa.py
 # Librerías necesarias para el funcionamiento de esta página
 import streamlit as st
 import numpy as np
@@ -6,6 +7,7 @@ import data_loader   # Módulo local de carga de datos
 import map_utils     # Módulo local de utilidades de mapa
 import plot_utils    # Módulo local de visualizaciones
 import auth_utils    # Módulo local de carga de datos
+import os            # Para verificar rutas
 
 # 1. CONFIGURACIÓN DE LA PÁGINA
 st.set_page_config(
@@ -14,6 +16,20 @@ st.set_page_config(
     layout="wide"
 )
 
+# --- FUNCIÓN PARA CARGAR CSS EXTERNO ---
+def cargar_css(nombre_archivo):
+    """Lee el archivo CSS y lo inyecta en la app."""
+    try:
+        with open(nombre_archivo, encoding='utf-8') as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.warning(f"⚠️ No se encontró el archivo de estilos: {nombre_archivo}")
+    except Exception as e:
+        st.error(f"Error cargando CSS: {e}")
+
+# Cargar los estilos desde el archivo externo
+cargar_css("kpi_styles.css")
+
 # Control de acceso de autenticación
 auth_utils.requiere_autenticacion()
 
@@ -21,12 +37,12 @@ auth_utils.requiere_autenticacion()
 URL_GEOJSON_ALCALDIAS = "https://datos.cdmx.gob.mx/dataset/alcaldias/resource/8648431b-4f34-4f1a-a4b1-19142f944300/download/limite-de-las-alcaldias.json"
 delegaciones = map_utils.load_geojson(URL_GEOJSON_ALCALDIAS, local_backup="limite-de-las-alcaldias.json")
 
-# CAMBIO 1: Intentando cargar el dataset completo
+# Carga exclusiva del dataset optimizado
 try:
     data = data_loader.load_data("hour_crimes_optimized.csv")
-except Exception:
-    st.warning("No se encontró 'hour_crimes_optimized.csv', cargando 'df_streamlit.csv' por defecto.")
-    data = data_loader.load_data("df_streamlit.csv")
+except Exception as e:
+    st.error(f"Error crítico al cargar datos: {e}")
+    st.stop()
 
 if data.empty:
     st.error("No se pudieron cargar los datos.")
@@ -45,7 +61,6 @@ alcaldia = st.sidebar.selectbox(
 )
 
 # b. Filtro Categoría
-# Asumimos que data_loader crea la columna 'CATEGORIA'.
 if "CATEGORIA" in data.columns:
     lista_categorias = ["TODAS"] + sorted(data["CATEGORIA"].dropna().unique())
     columna_filtro = "CATEGORIA"
@@ -69,10 +84,9 @@ with st.sidebar.form(key="map_config_form"):
         default=["Heatmap"]
     )
     
-    # Selector de muestreo para evitar que el mapa se trabe con muchos datos
-    # CAMBIO: Se agrega opción de 10%
+    # Selector de muestreo
     opciones_muestreo = {
-        "10% (Muy Rápido)": 0.1,  # Nueva opción
+        "10% (Muy Rápido)": 0.1,
         "20% (Rápido)": 0.2,
         "40% (Equilibrado)": 0.4,
         "60% (Detallado)": 0.6,
@@ -83,13 +97,13 @@ with st.sidebar.form(key="map_config_form"):
     seleccion_muestreo_texto = st.selectbox(
         "Densidad de puntos (Rendimiento):",
         options=opciones_muestreo.keys(),
-        index=0 # Por defecto 10% (Muy Rápido)
+        index=0 
     )
     
     porcentaje_seleccionado = opciones_muestreo[seleccion_muestreo_texto]
     map_submit_button = st.form_submit_button(label="🔄 Actualizar Mapa")
 
-# 5. Filtrado de Datos
+# 5. FILTRADO DE DATOS
 df_filtrado = data.copy()
 
 if alcaldia != "TODAS":
@@ -98,54 +112,88 @@ if alcaldia != "TODAS":
 if categoria != "TODAS":
     df_filtrado = df_filtrado[df_filtrado[columna_filtro] == categoria]
 
-# 6. KPIs (Indicadores Clave)
+# 6. KPIs (CONSTRUCCIÓN MANUAL HTML PARA CONTROL TOTAL)
 st.markdown("### Indicadores Clave")
 col_kpi1, col_kpi2, col_kpi3, col_kpi4 = st.columns(4)
 
+# Cálculo de valores
+total = f"{len(df_filtrado):,}"
+alcaldia_val = df_filtrado["alcaldia_hecho"].value_counts().index[0] if len(df_filtrado) > 0 else "N/A"
+delito_val = df_filtrado["delito"].value_counts().index[0] if len(df_filtrado) > 0 else "N/A"
+# Usamos un recorte suave solo por seguridad, el CSS manejará el ajuste
+delito_val_display = (delito_val[:50] + '...') if len(delito_val) > 50 else delito_val
+
+violento_val = "N/A"
+if 'Violento' in df_filtrado.columns and len(df_filtrado) > 0:
+    pct = (df_filtrado['Violento'] == 'Violento').mean()
+    violento_val = f"{pct:.1%}"
+
+# Renderizado HTML usando las clases del CSS externo
+# Cada tarjeta usa la clase base 'kpi-card' y una clase de texto específica (text-lg, text-md, text-sm)
 with col_kpi1:
-    st.metric("Total de Incidentes", f"{len(df_filtrado):,}")
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-label">Total de Incidentes</div>
+        <div class="kpi-value text-lg">{total}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 with col_kpi2:
-    if len(df_filtrado) > 0:
-        alcaldia_top = df_filtrado["alcaldia_hecho"].value_counts().index[0]
-        st.metric("Alcaldía con Más Incidentes", alcaldia_top)
-    else:
-        st.metric("Alcaldía con Más Incidentes", "N/A")
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-label">Alcaldía con Más Incidentes</div>
+        <div class="kpi-value text-md">{alcaldia_val}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 with col_kpi3:
-    if len(df_filtrado) > 0:
-        delito_top = df_filtrado["delito"].value_counts().index[0]
-        texto_delito = (delito_top[:25] + '...') if len(delito_top) > 25 else delito_top
-        st.metric("Delito Más Común", texto_delito)
-    else:
-        st.metric("Delito Más Común", "N/A")
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-label">Delito Más Común</div>
+        <div class="kpi-value text-sm">{delito_val_display}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 with col_kpi4:
-    if 'Violento' in df_filtrado.columns and len(df_filtrado) > 0:
-        pct_violento = (df_filtrado['Violento'] == 'Violento').mean()
-        st.metric("% Violentos", f"{pct_violento:.1%}")
-    else:
-        st.metric("% Violentos", "N/A")
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-label">% Violentos</div>
+        <div class="kpi-value text-lg">{violento_val}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("---")
 
-# 7. VISUALIZACIÓN PRINCIPAL (MAPA) - FILA COMPLETA
+# 7. ADVERTENCIA DE RENDIMIENTO (Gris Sobrio)
+st.markdown(
+    """
+    <div class="warning-box">
+        <span class="warning-icon">⚠️</span>
+        <span>
+            <strong>Precaución de Rendimiento:</strong> 
+            El uso de una alta "Densidad de puntos" (superior al 40%) puede ralentizar significativamente 
+            la carga del mapa. Se recomienda usar configuraciones bajas (10% o 20%) para una exploración fluida.
+        </span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# 8. VISUALIZACIÓN PRINCIPAL (MAPA)
 st.subheader(f"📍 Mapa de Incidencias ({alcaldia})")
 
 if df_filtrado.empty:
     st.warning("⚠️ No hay datos para mostrar con los filtros seleccionados.")
 else:
-    # Lógica de muestreo para rendimiento
     total_registros = len(df_filtrado)
     num_points = int(total_registros * porcentaje_seleccionado)
     
     if num_points < total_registros:
         df_mapa = df_filtrado.sample(n=num_points)
-        st.info(f"Visualizando {num_points} eventos (Muestreo: {seleccion_muestreo_texto})")
+        st.info(f"Visualizando muestra de {num_points:,} eventos ({seleccion_muestreo_texto})")
     else:
         df_mapa = df_filtrado.copy()
 
-    # Renderizado usando la función robusta
     m = map_utils.render_folium_map(
         df_mapa,
         delegaciones,
@@ -153,7 +201,6 @@ else:
         show_heatmap=("Heatmap" in tipo_mapa)
     )
     
-    # CAMBIO 2: Mapa ocupa todo el ancho (sin columnas) y más altura
     st_folium(
         m, 
         height=600, 
@@ -161,38 +208,14 @@ else:
         returned_objects=[] 
     )
 
+# 9. INFORMACIÓN ADICIONAL
 st.markdown("---")
-
-# 8. GRÁFICAS ADICIONALES - FILA COMPLETA (DEBAJO DEL MAPA)
-st.subheader("📈 Estadísticas Detalladas")
-
-# Las pestañas ahora ocuparán todo el ancho de la página
-tab1, tab2 = st.tabs(["Distribución por Alcaldía", "Top 10 Delitos"])
-
-with tab1:
-    # CAMBIO 3: Gráfico ocupa todo el ancho disponible
-    chart_alcaldia = plot_utils.plot_delitos_por_alcaldia(df_filtrado)
-    st.altair_chart(chart_alcaldia, use_container_width=True)
-    
-with tab2:
-    # Intentamos usar la función plot_top_delitos
-    try:
-        chart_top = plot_utils.plot_top_delitos(df_filtrado, top_n=10)
-        st.altair_chart(chart_top, use_container_width=True)
-    except AttributeError:
-        st.info("El gráfico de Top Delitos estará disponible próximamente.")
-
-# 9. INFORMACIÓN ADICIONAL (EXPANDER)
-st.markdown("---")
-with st.expander("ℹ️ Información técnica de esta vista"):
+with st.expander("ℹ️ Resumen técnico"):
     st.markdown(f"""
     **Resumen de Filtros Activos:**
     - **Alcaldía:** {alcaldia}
     - **Categoría:** {categoria}
     - **Registros Totales en Pantalla:** {len(df_filtrado):,}
-    
-    **Nota sobre el mapa:** Si notas lentitud, reduce el porcentaje de "Densidad de puntos" en la barra lateral.
     """)
 
-# Botón de cerrar sesión al final del sidebar
 auth_utils.renderizar_logout_sidebar()
