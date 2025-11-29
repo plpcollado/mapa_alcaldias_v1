@@ -110,27 +110,46 @@ def requiere_autenticacion(user_types: list = None):
 
 def mostrar_info_usuario_sidebar():
     """
-    Muestra información del usuario y botón de logout al final del sidebar
+    Muestra el badge del usuario (Admin/Invitado).
+    NOTA: Llamar a esta función AL PRINCIPIO del sidebar en el script principal.
     """
-    # Usar un contenedor al final para el botón de cerrar sesión
-    # Esto asegura que siempre esté al final, después de los filtros
-    pass  # El contenido se agregará después de la navegación
+    if not st.session_state.get("authenticated", False):
+        return
+
+    # Definir etiqueta simplificada
+    etiqueta = "Admin" if st.session_state.user_type == "privilegiado" else "Invitado"
+    
+    st.sidebar.markdown(
+        f"""
+        <div style="
+            background-color: #9F2241; 
+            padding: 0.5rem 1rem; 
+            border-radius: 20px; 
+            color: white; 
+            margin-bottom: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        ">
+            <span style="font-size: 1.1rem;">👤</span>
+            <span style="font-weight: 600;">{etiqueta}</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 def renderizar_logout_sidebar():
     """
-    Renderiza el botón de logout al final del sidebar (llamar al final de cada página)
+    Renderiza SOLO el botón de logout al final del sidebar (llamar al final de cada página)
     """
-    # Spacer para empujar el contenido al final
-    st.sidebar.markdown("")
+    # Spacer visual
     st.sidebar.markdown("---")
     
-    tipo_emoji = "🔑" if st.session_state.user_type == "privilegiado" else "👥"
-    tipo_texto = "Privilegiado" if st.session_state.user_type == "privilegiado" else "General"
-    
-    st.sidebar.info(f"{tipo_emoji} **{st.session_state.username}**\n\nTipo: {tipo_texto}")
-    
-    if st.sidebar.button("🚪 Cerrar Sesión", use_container_width=True):
+    # Botón de cerrar sesión
+    if st.sidebar.button("Cerrar Sesión", use_container_width=True):
         logout()
         st.rerun()
 
@@ -142,12 +161,62 @@ def pagina_login(usuarios: dict):
     Args:
         usuarios: Diccionario con las credenciales de usuarios
     """
-    # Ocultar sidebar completamente
+    
+    # CSS personalizado (Mantenemos tu estilo de Tabs y Botones)
     st.markdown(
         """
         <style>
+            /* Ocultar sidebar en login */
             [data-testid="stSidebar"] {
                 display: none;
+            }
+            
+            /* --- PERSONALIZACIÓN DE TABS (Pestañas) --- */
+            
+            /* 1. ELIMINAR LA BARRA ROJA NATIVA */
+            div[data-baseweb="tab-highlight"] {
+                visibility: hidden !important;
+            }
+            
+            /* 2. ESTADO ACTIVO (Pestaña seleccionada) */
+            /* Texto: Rojo #9F2241 */
+            div[data-testid="stTabs"] button[aria-selected="true"] p {
+                color: #9F2241 !important;
+            }
+            /* Borde inferior (Rayita Activa): Rojo #9F2241 */
+            div[data-testid="stTabs"] button[aria-selected="true"] {
+                border-bottom: 4px solid #9F2241 !important;
+                border-radius: 0px !important; 
+            }
+            
+            /* 3. ESTADO HOVER (Pasar el mouse) */
+            /* Texto: Verde #10312B */
+            div[data-testid="stTabs"] button:hover p {
+                color: #10312B !important; 
+            }
+            /* Borde inferior Hover: Verde #10312B */
+            div[data-testid="stTabs"] button:hover {
+                border-bottom: 4px solid #10312B !important;
+                border-radius: 0px !important;
+            }
+
+            /* --- FIN PERSONALIZACIÓN TABS --- */
+
+            /* Personalización del BOTÓN PRIMARIO (Acceder como invitado) */
+            button[kind="primary"] {
+                background-color: #9F2241 !important;
+                border-color: #9F2241 !important;
+                color: white !important;
+            }
+            button[kind="primary"]:hover {
+                background-color: #7D1B33 !important;
+                border-color: #7D1B33 !important;
+            }
+            button[kind="primary"]:focus:not(:active) {
+                background-color: #9F2241 !important;
+                border-color: #9F2241 !important;
+                color: white !important;
+                box-shadow: none !important;
             }
         </style>
         """,
@@ -193,8 +262,25 @@ def pagina_login(usuarios: dict):
         
         with tab2:
             st.markdown("### Acceso como Invitado")
-            st.info("Accede sin credenciales con permisos limitados")
             
+            # CAMBIO: Usamos HTML personalizado en lugar de st.info
+            st.markdown(
+                """
+                <div style="
+                    background-color: #f8f9fa; 
+                    padding: 1rem; 
+                    border-radius: 0.5rem; 
+                    color: #262730; 
+                    margin-bottom: 1rem;
+                    text-align: center;
+                ">
+                    Accede sin credenciales con permisos limitados
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            
+            # El botón usará el estilo CSS definido arriba
             if st.button("Acceder como Invitado", use_container_width=True, type="primary"):
                 login_invitado()
                 st.success("✅ Acceso como invitado concedido! Redirigiendo...")

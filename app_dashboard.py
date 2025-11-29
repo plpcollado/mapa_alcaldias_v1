@@ -21,7 +21,7 @@ if not st.session_state.authenticated:
 # Páginas disponibles para todos los usuarios autenticados
 pagina_analisis = st.Page(
     "pages/1_Analisis_Inicial.py",
-    title="Análisis Inicial",
+    title="Dashboard Interactivo",
     icon="📊",
     default=True
 )
@@ -50,6 +50,9 @@ else:
     pg = st.navigation({
         "📈 Análisis": [pagina_analisis, pagina_mapa]
     })
+
+# --- NUEVO: Mostrar badge de usuario al principio del sidebar ---
+auth_utils.mostrar_info_usuario_sidebar()
 
 # Ejecutar la navegación
 pg.run()

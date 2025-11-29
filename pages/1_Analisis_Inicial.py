@@ -6,10 +6,45 @@ import auth_utils   # Módulo local de autenticación
 
 # 1. CONFIGURACIÓN DE LA PÁGINA
 st.set_page_config(
-    page_title="Dashboard Inicial - Delitos CDMX",
+    page_title="Dashboard Interactivo - Delitos CDMX",
     page_icon="📋",
     layout="wide"
 )
+
+# --- INYECCIÓN DE CSS (CORREGIDO PARA ESTADOS ACTIVOS/INACTIVOS) ---
+st.markdown(
+    """
+    <style>
+    /* 1. SELECTBOX (ALCALDÍA): Borde color vino al enfocar */
+    div[data-baseweb="select"] > div:focus-within {
+        border-color: #9F2241 !important;
+    }
+
+    /* 2. MULTISELECT (AÑOS) - LÓGICA INTELIGENTE */
+    
+    /* Solo aplicamos el color VINO si el contenedor NO tiene un input deshabilitado */
+    div[data-testid="stMultiSelect"]:not(:has(input:disabled)) span[data-baseweb="tag"] {
+        background-color: #9F2241 !important;
+    }
+    
+    /* Texto blanco solo si está activo */
+    div[data-testid="stMultiSelect"]:not(:has(input:disabled)) span[data-baseweb="tag"] span {
+        color: white !important;
+    }
+    
+    /* Icono 'x' blanco solo si está activo */
+    div[data-testid="stMultiSelect"]:not(:has(input:disabled)) span[data-baseweb="tag"] svg {
+        fill: white !important;
+        color: white !important;
+    }
+
+    /* NOTA: Cuando se bloquea (input:disabled), estas reglas no aplican 
+       y el componente regresa a su color gris por defecto automáticamente. */
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+# --------------------------------------------------------
 
 # Control de acceso: requiere autenticación (todos los tipos de usuario)
 auth_utils.requiere_autenticacion()
@@ -24,8 +59,25 @@ if data.empty:
     st.stop()
 
 # 3. TÍTULO
-st.title("Dashboard Inicial - Delitos CDMX")
+st.title("Dashboard Interactivo - Delitos CDMX")
 st.subheader("Análisis Exploratorio de los Datos")
+
+# disclaimer de cantidad de datos usada
+st.markdown(
+    """
+    <div style="
+        padding: 1rem;
+        border-radius: 0.25rem;
+        margin-bottom: 1rem;
+        background-color: #f8f9fa; /* Fondo gris muy claro */
+        border-left: 6px solid #9F2241; /* La 'ranura' lateral en color vino */
+        color: #262730;
+    ">
+        <strong>Disclaimer:</strong> El dataset mediante el que se basan las visualizaciones es un muestreo del 35% del dataframe original debido a las limitaciones de Streamlit en cuanto a eficiencia, ya que se encontró que esta cantidad de datos era lo suficientemente representativa pero lo suficientemente recortada para permitir un funcionamiento óptimo y eficaz.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # 4. CONFIGURACIÓN DEL SIDEBAR (FILTROS)
 st.sidebar.header("Filtros Globales")
@@ -142,7 +194,7 @@ else:
         chart_heatmap = plot_utils.plot_heatmap_dia_hora(data_completo_filtered)
         st.altair_chart(chart_heatmap, use_container_width=True)
     
-    # Línea divisora entre filas     
+    # Línea divisora entre filas      
     st.markdown("---")
 
 # c. Fila 3:
