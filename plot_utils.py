@@ -146,7 +146,8 @@ def plot_volumen_total_violencia_hora(data):
     areas = base.mark_area(opacity=0.8).encode(
         y=alt.Y('Total:Q', title='Número de Delitos', stack='zero'),
         color=alt.Color('Violento', 
-            scale=alt.Scale(domain=['No Violento', 'Violento'], range=COLORES_STACK),
+            # Se asigna la posición 1 (verde) a 'No Violento' y la 0 (rojo) a 'Violento'
+            scale=alt.Scale(domain=['No Violento', 'Violento'], range=[COLORES_STACK[1], COLORES_STACK[0]]),
             legend=alt.Legend(
                 orient='none',
                 legendX=10,
@@ -160,7 +161,7 @@ def plot_volumen_total_violencia_hora(data):
                 symbolSize=100
             )
         ),
-        order=alt.Order('Violento', sort='descending')
+        order=alt.Order('Violento', sort='ascending')
     )
     
     bands = alt.Chart(pd.DataFrame({'start': [0, 20], 'stop': [6, 24]})).mark_rect(
