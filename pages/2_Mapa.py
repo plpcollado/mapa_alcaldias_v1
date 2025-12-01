@@ -79,9 +79,9 @@ auth_utils.requiere_autenticacion()
 URL_GEOJSON_ALCALDIAS = "https://datos.cdmx.gob.mx/dataset/alcaldias/resource/8648431b-4f34-4f1a-a4b1-19142f944300/download/limite-de-las-alcaldias.json"
 delegaciones = map_utils.load_geojson(URL_GEOJSON_ALCALDIAS, local_backup="limite-de-las-alcaldias.json")
 
-# Carga exclusiva del dataset optimizado
+# Carga del dataset optimizado
 try:
-    data = data_loader.load_data("hour_crimes_optimized.csv")
+    data = data_loader.load_data()
 except Exception as e:
     st.error(f"Error crítico al cargar datos: {e}")
     st.stop()

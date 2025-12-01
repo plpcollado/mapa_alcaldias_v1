@@ -50,11 +50,11 @@ st.markdown(
 auth_utils.requiere_autenticacion()
 
 # 2. CARGA DE DATOS
-data = data_loader.load_data("df_streamlit.csv") 
-data_completo = data_loader.load_data("hour_crimes_optimized.csv")
+# Cargar el dataset optimizado (se cachea automáticamente)
+data_completo = data_loader.load_data()
 
 # Aviso de carga incorrecta de datos
-if data.empty:
+if data_completo.empty:
     st.error("No se pudieron cargar los datos.")
     st.stop()
 
