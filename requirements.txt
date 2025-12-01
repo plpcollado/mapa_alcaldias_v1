@@ -8,3 +8,4 @@ altair
 folium
 requests
 joblib
+matplotlib
