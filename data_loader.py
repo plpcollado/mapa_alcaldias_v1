@@ -48,14 +48,11 @@ def process_hour_crimes_data(df):
 @st.cache_data
 def load_data(path="hour_crimes_optimized.csv"):
     """
-    Función Universal: Carga siempre el dataset optimizado.
-    Si una página antigua pide 'df_streamlit.csv', se le redirige al archivo optimizado.
+    Carga el dataset optimizado de crímenes.
+    El parámetro 'path' se mantiene por compatibilidad pero siempre carga hour_crimes_optimized.csv
     """
-    # Forzamos siempre el uso del archivo real
-    real_path = "hour_crimes_optimized.csv"
-    
     try:
-        # Cargar columnas necesarias para AMBAS páginas (Mapa y Análisis)
+        # Cargar columnas necesarias para todas las páginas
         usecols = [
             'latitud_N', 'longitud_N', 'alcaldia_hecho_N', 'delito_N',
             'anio_hecho_N', 'mes_hecho_N', 'hora', 'dia_semana', 'CATEGORIA'
@@ -74,7 +71,7 @@ def load_data(path="hour_crimes_optimized.csv"):
             'longitud_N': 'float32'
         }
         
-        data = pd.read_csv(real_path, usecols=usecols, dtype=dtype, low_memory=False)
+        data = pd.read_csv("hour_crimes_optimized.csv", usecols=usecols, dtype=dtype, low_memory=False)
         
         if not data.empty:
             data_limpio = process_hour_crimes_data(data)
@@ -85,8 +82,8 @@ def load_data(path="hour_crimes_optimized.csv"):
             return pd.DataFrame()
             
     except FileNotFoundError:
-         st.error(f"❌ Archivo no encontrado: {real_path}")
+         st.error("❌ Archivo hour_crimes_optimized.csv no encontrado")
          return pd.DataFrame()
     except Exception as e:
-        st.error(f"❌ Error en data_loader: {e}")
+        st.error(f"❌ Error al cargar datos: {e}")
         return pd.DataFrame()
