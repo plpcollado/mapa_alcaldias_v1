@@ -282,9 +282,18 @@ else:
     if not score_col:
         st.error("No se encontró columna de score en el CSV de predicción.")
     else:
+        # Preparar diccionario de agregación
+        agg_dict = {score_col: "mean"}
+        
+        # Si existen las nuevas columnas (alcaldia, sector) en el parquet, las conservamos
+        if "alcaldia" in df_date.columns:
+            agg_dict["alcaldia"] = "first"
+        if "sector" in df_date.columns:
+            agg_dict["sector"] = "first"
+
         agg = (
-            df_date.groupby("cuadrante_id")[score_col]
-            .mean()
+            df_date.groupby("cuadrante_id")
+            .agg(agg_dict)
             .reset_index()
             .rename(columns={score_col: "score"})
             .sort_values("score", ascending=False)
@@ -297,17 +306,17 @@ else:
         centroids = load_cuadrante_centroids(geojson_url=geojson_url)
         gdf_polygons = load_polygons(geojson_url)
         
-        # Update: Invertir colores para Cluster 0 y Cluster 1
+        # Paleta de cluster con 0 (Gris) y 1 (Guinda) INVERTIDOS
         cluster_profiles = {
             0: {
                 'nombre': 'Perfil 1: Muy Alto Volumen - Baja Violencia',
                 'descripcion': '~1584 eventos/mes, 17.7% violentos. Muy alto volumen delictivo pero proporción de violencia baja.',
-                'color': '#6F7271' # Gris (antes guinda)
+                'color': '#6F7271'  # Gris
             },
             1: {
                 'nombre': 'Perfil 2: Alto Volumen - Alta Violencia',
                 'descripcion': '~1475 eventos/mes, 38.7% violentos. Mayor proporción de delitos violentos - ZONAS PRIORITARIAS.',
-                'color': '#9F2241' # Guinda (antes gris)
+                'color': '#9F2241'  # Guinda
             },
             2: {
                 'nombre': 'Perfil 3: Volumen Medio - Violencia Elevada',
@@ -498,10 +507,10 @@ else:
                 gdf_clusters = gdf_polygons.merge(clusters_data, on='cuadrante_id', how='inner')
                 
                 if not gdf_clusters.empty:
-                    # Update: Paleta de colores invertida para 0 y 1
+                    # Paleta de colores invertida (0 y 1)
                     cluster_colors = {
-                        0: '#6F7271', # Gris (antes guinda)
-                        1: '#9F2241', # Guinda (antes gris)
+                        0: '#6F7271', # Gris 
+                        1: '#9F2241', # Guinda
                         2: '#BC955C', 
                         3: '#235B4E'  
                     }
@@ -546,7 +555,6 @@ else:
                     for cluster_id in sorted(cluster_colors.keys()):
                         color = cluster_colors[cluster_id]
                         profile = cluster_profiles[cluster_id]
-                        # Usar el color del cluster para el borde y el icono
                         cluster_legend_html += f'''
                         <div style="margin: 6px 0; padding: 6px; border-left: 4px solid {color}; background-color: rgba(159, 34, 65, 0.05);">
                             <div style="display: flex; align-items: center;">
@@ -568,10 +576,10 @@ else:
                 st.markdown("#### Perfiles Delictivos")
                 cols = st.columns(4)
                 
-                # Tarjetas actualizadas con colores invertidos para 0 y 1
+                # Tarjetas
                 cluster_cards = {
-                    0: {'color': '#6F7271', 'label': 'Perfil 1', 'desc': 'Muy alto volumen, baja violencia', 'pct': '17.7%'}, # Gris
-                    1: {'color': '#9F2241', 'label': 'Perfil 2 🚨', 'desc': 'Alto volumen, alta violencia', 'pct': '38.7%'}, # Guinda
+                    0: {'color': '#6F7271', 'label': 'Perfil 1', 'desc': 'Muy alto volumen, baja violencia', 'pct': '17.7%'},
+                    1: {'color': '#9F2241', 'label': 'Perfil 2 🚨', 'desc': 'Alto volumen, alta violencia', 'pct': '38.7%'}, 
                     2: {'color': '#BC955C', 'label': 'Perfil 3', 'desc': 'Volumen medio, violencia elevada', 'pct': '34.1%'},
                     3: {'color': '#235B4E', 'label': 'Perfil 4', 'desc': 'Bajo volumen, concentración temporal', 'pct': '19.3%'}
                 }
@@ -594,7 +602,53 @@ else:
                         )
                 st.markdown("---")
 
-            st.table(merged[["cuadrante_id", "score", "lat", "lon"]].assign(score=lambda d: d["score"].round(4)))
+            # Preparar tabla final con nombres amigables (SIN Score)
+            cols_final = ["cuadrante_id"]
+            rename_final = {"cuadrante_id": "ID"}
+            
+            # Solo agregar si existen en el merge
+            if "alcaldia" in merged.columns:
+                cols_final.append("alcaldia")
+                rename_final["alcaldia"] = "Alcaldía"
+                
+            if "sector" in merged.columns:
+                cols_final.append("sector")
+                rename_final["sector"] = "Sector"
+
+            df_display = merged[cols_final].rename(columns=rename_final)
+            
+            # Estilizar con Pandas Styler (Forzando ancho 100% y estilos de color)
+            styler = df_display.style.set_table_attributes('style="width:100%; min-width:100%; border-collapse:collapse;"')
+            
+            styler.set_table_styles([
+                # Encabezados (Header): Guinda #9F2241
+                {'selector': 'th.col_heading', 'props': [
+                    ('background-color', '#9F2241'),
+                    ('color', 'white'),
+                    ('font-family', 'sans-serif'),
+                    ('text-align', 'left'),
+                    ('padding', '10px'),
+                    ('border', '1px solid #ddd')
+                ]},
+                # Índice (Index): Rosa #F07A97
+                {'selector': 'th.row_heading', 'props': [
+                    ('background-color', '#F07A97'),
+                    ('color', 'white'),
+                    ('font-family', 'sans-serif'),
+                    ('text-align', 'center'),
+                    ('padding', '10px'),
+                    ('border', '1px solid #ddd')
+                ]},
+                # Celdas (Data): Borde suave
+                {'selector': 'td', 'props': [
+                    ('border', '1px solid #ddd'),
+                    ('padding', '10px'),
+                    ('font-family', 'sans-serif')
+                ]}
+            ])
+            
+            # Renderizar HTML usando Styler
+            st.markdown(styler.to_html(), unsafe_allow_html=True)
 
 # Botón de cerrar sesión al final del sidebar
 auth_utils.renderizar_logout_sidebar()
