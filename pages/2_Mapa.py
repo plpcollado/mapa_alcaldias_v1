@@ -1,4 +1,3 @@
-# pages/2_Mapa.py
 # Librerías necesarias para el funcionamiento de esta página
 import streamlit as st
 import numpy as np
