@@ -174,11 +174,10 @@ def load_cuadrante_centroids(features_csv: str = None, joblib_path: str = None, 
 
 # Carga de datos
 local_parquet = "data/predicciones_lite.parquet"
+absolute_csv_fallback = "/Users/pedropc/Downloads/full-pipeline-clasificacion/Team5/results/prediccion_violencia/pred_prophet_cuadrantes_N7.csv"
 
 if os.path.exists(local_parquet):
     pred_path = local_parquet
-else:
-    pred_path = local_parquet  # Use parquet path even if not found locally (for cloud deployment)
       
 preds = load_predictions(pred_path)
 
