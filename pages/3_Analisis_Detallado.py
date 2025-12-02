@@ -600,55 +600,57 @@ else:
                             f"</div>",
                             unsafe_allow_html=True
                         )
-                st.markdown("---")
 
             # Preparar tabla final con nombres amigables (SIN Score)
-            cols_final = ["cuadrante_id"]
-            rename_final = {"cuadrante_id": "ID"}
-            
-            # Solo agregar si existen en el merge
-            if "alcaldia" in merged.columns:
-                cols_final.append("alcaldia")
-                rename_final["alcaldia"] = "Alcaldía"
+            if show_prediction:
+                st.markdown("---") # Línea divisora SOLO si hay predicción/tabla
                 
-            if "sector" in merged.columns:
-                cols_final.append("sector")
-                rename_final["sector"] = "Sector"
+                cols_final = ["cuadrante_id"]
+                rename_final = {"cuadrante_id": "ID"}
+                
+                # Solo agregar si existen en el merge
+                if "alcaldia" in merged.columns:
+                    cols_final.append("alcaldia")
+                    rename_final["alcaldia"] = "Alcaldía"
+                    
+                if "sector" in merged.columns:
+                    cols_final.append("sector")
+                    rename_final["sector"] = "Sector"
 
-            df_display = merged[cols_final].rename(columns=rename_final)
-            
-            # Estilizar con Pandas Styler (Forzando ancho 100% y estilos de color)
-            styler = df_display.style.set_table_attributes('style="width:100%; min-width:100%; border-collapse:collapse;"')
-            
-            styler.set_table_styles([
-                # Encabezados (Header): Guinda #9F2241
-                {'selector': 'th.col_heading', 'props': [
-                    ('background-color', '#9F2241'),
-                    ('color', 'white'),
-                    ('font-family', 'sans-serif'),
-                    ('text-align', 'left'),
-                    ('padding', '10px'),
-                    ('border', '1px solid #ddd')
-                ]},
-                # Índice (Index): Rosa #F07A97
-                {'selector': 'th.row_heading', 'props': [
-                    ('background-color', '#F07A97'),
-                    ('color', 'white'),
-                    ('font-family', 'sans-serif'),
-                    ('text-align', 'center'),
-                    ('padding', '10px'),
-                    ('border', '1px solid #ddd')
-                ]},
-                # Celdas (Data): Borde suave
-                {'selector': 'td', 'props': [
-                    ('border', '1px solid #ddd'),
-                    ('padding', '10px'),
-                    ('font-family', 'sans-serif')
-                ]}
-            ])
-            
-            # Renderizar HTML usando Styler
-            st.markdown(styler.to_html(), unsafe_allow_html=True)
+                df_display = merged[cols_final].rename(columns=rename_final)
+                
+                # Estilizar con Pandas Styler (Forzando ancho 100% y estilos de color)
+                styler = df_display.style.set_table_attributes('style="width:100%; min-width:100%; border-collapse:collapse;"')
+                
+                styler.set_table_styles([
+                    # Encabezados (Header): Guinda #9F2241
+                    {'selector': 'th.col_heading', 'props': [
+                        ('background-color', '#9F2241'),
+                        ('color', 'white'),
+                        ('font-family', 'sans-serif'),
+                        ('text-align', 'left'),
+                        ('padding', '10px'),
+                        ('border', '1px solid #ddd')
+                    ]},
+                    # Índice (Index): Rosa #F07A97
+                    {'selector': 'th.row_heading', 'props': [
+                        ('background-color', '#F07A97'),
+                        ('color', 'white'),
+                        ('font-family', 'sans-serif'),
+                        ('text-align', 'center'),
+                        ('padding', '10px'),
+                        ('border', '1px solid #ddd')
+                    ]},
+                    # Celdas (Data): Borde suave
+                    {'selector': 'td', 'props': [
+                        ('border', '1px solid #ddd'),
+                        ('padding', '10px'),
+                        ('font-family', 'sans-serif')
+                    ]}
+                ])
+                
+                # Renderizar HTML usando Styler
+                st.markdown(styler.to_html(), unsafe_allow_html=True)
 
 # Botón de cerrar sesión al final del sidebar
 auth_utils.renderizar_logout_sidebar()
