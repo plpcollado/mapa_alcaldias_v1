@@ -11,7 +11,7 @@ import streamlit.components.v1 as components
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 
-# configuración de la página
+# Configuración de la página
 st.set_page_config(
     page_title="Análisis Detallado - Dashboard Delitos CDMX",
     page_icon="🔍",
@@ -21,7 +21,7 @@ st.set_page_config(
 # Control de acceso: solo usuarios privilegiados
 auth_utils.requiere_autenticacion(user_types=["privilegiado"]) 
 
-# títulos
+# Encabezado de página
 st.title("Análisis Detallado")
 st.subheader("Visualización de Predicciones, Clustering e Índice de Desarrollo Social (IDS) por Cuadrante")
 
